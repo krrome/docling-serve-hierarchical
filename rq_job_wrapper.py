@@ -1,6 +1,7 @@
 """Instrumented wrapper for RQ job functions with OpenTelemetry tracing."""
 
 import base64
+import copy
 import hashlib
 import logging
 import shutil
@@ -34,9 +35,9 @@ from docling_serve.rq_instrumentation import extract_trace_context
 logger = logging.getLogger(__name__)
 
 
-def _apply_hierarchy(results: Any):
-    for result in results:
-        ResultPostprocessor(result).process()
+def _apply_hierarchy(results: Any, sources: list[Union[str, DocumentStream]]):
+    for result, source in zip(results, sources):
+        ResultPostprocessor(result, source=source).process()
         yield result
 
 
@@ -158,6 +159,9 @@ def instrumented_docling_task(  # noqa: C901
             if not task.convert_options:
                 raise RuntimeError("No conversion options")
 
+            # Deep-copy sources before conversion so streams can be re-read by ResultPostprocessor
+            postprocessor_sources = copy.deepcopy(convert_sources)
+
             # Document conversion with detailed tracing
             with tracer.start_as_current_span("convert_documents") as conv_span:
                 conv_span.set_attribute("num_sources", len(convert_sources))
@@ -169,7 +173,7 @@ def instrumented_docling_task(  # noqa: C901
                     headers=headers,
                 )
 
-            conv_results = _apply_hierarchy(conv_results)
+            conv_results = _apply_hierarchy(conv_results, postprocessor_sources)
 
             # Result processing with detailed tracing
             with tracer.start_as_current_span("process_results") as proc_span:
