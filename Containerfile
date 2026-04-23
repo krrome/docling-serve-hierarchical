@@ -12,8 +12,8 @@ RUN /opt/app-root/bin/pip install --quiet \
 # The script searches for unique anchor strings; it fails loudly if any anchor
 # is missing (e.g. after an upstream restructure) and validates syntax before writing.
 COPY patch_rq_job_wrapper.py /tmp/patch_rq_job_wrapper.py
-RUN SITE_PACKAGES=$(/opt/app-root/bin/python -c "import site; print(site.getsitepackages()[0])") && \
+RUN DOCLING_SERVE_PATH=$(/opt/app-root/bin/python -c "import docling_serve; print(docling_serve.__path__[0])") && \
     /opt/app-root/bin/python /tmp/patch_rq_job_wrapper.py \
-        "$SITE_PACKAGES/docling_serve/rq_job_wrapper.py"
+        "$DOCLING_SERVE_PATH/rq_job_wrapper.py"
 
 USER 1001
