@@ -14,6 +14,7 @@ import urllib.request
 from pathlib import Path
 
 OPTS = {"to_formats": ["md"], "ocr": False}
+EXPECTED_MD = (Path(__file__).parent / "sample.md").read_text()
 
 
 def _check(label: str, body: dict) -> None:
@@ -21,7 +22,9 @@ def _check(label: str, body: dict) -> None:
         f"[{label}] status={body['status']} errors={body.get('errors')}"
     )
     md = (body.get("document") or {}).get("md_content") or ""
-    assert "#" in md, f"[{label}] no headings found in markdown output"
+    assert md.strip() == EXPECTED_MD.strip(), (
+        f"[{label}] markdown output does not match tests/sample.md"
+    )
     print(f"[{label}] PASS  (processing_time={body['processing_time']:.1f}s)")
 
 
