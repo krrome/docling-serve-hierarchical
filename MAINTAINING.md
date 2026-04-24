@@ -1,23 +1,11 @@
 ## Keeping up with upstream
 
-The build **fails** if upstream changes `rq_job_wrapper.py` — you will see a `diff` output in the CI logs. To update:
+The build **fails** if upstream changes `manager.py` — you will see a `diff` output in the CI logs. To update:
 
-1. Copy the new upstream file to `rq_job_wrapper.py.orig`
-2. Re-apply the two additions to `rq_job_wrapper.py` (import + `_apply_hierarchy` call — see the diff below)
+1. Copy the new upstream file to `manager.py.orig`
+2. Re-apply the additions to `manager.py`
 3. Push
 
-```diff
-+from docling.datamodel.document import ConversionResult
-+from hierarchical.postprocessor import ResultPostprocessor
-
-+def _apply_hierarchy(results):
-+    for result in results:
-+        ResultPostprocessor(result).process()
-+        yield result
-
- conv_results = conversion_manager.convert_documents(...)
-+conv_results = _apply_hierarchy(conv_results)
-```
 
 ## Building locally
 

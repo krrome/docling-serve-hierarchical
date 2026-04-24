@@ -22,6 +22,8 @@ def _check(label: str, body: dict) -> None:
         f"[{label}] status={body['status']} errors={body.get('errors')}"
     )
     md = (body.get("document") or {}).get("md_content") or ""
+    import pdb
+    pdb.set_trace()
     assert md.strip() == EXPECTED_MD.strip(), (
         f"[{label}] markdown output does not match tests/sample.md"
     )

@@ -10,7 +10,7 @@ The only files modified relative to upstream are:
 
 | File | Change |
 |------|--------|
-| `docling_serve/rq_job_wrapper.py` | Wraps `conv_results` with `_apply_hierarchy()` |
+| `docling_serve/convert/manager.py` | Patches the result with docling-hierarchical-pdf ResultPostprocessor |
 
 `docling-hierarchical-pdf` is installed as an additional package on top of the upstream environment.
 

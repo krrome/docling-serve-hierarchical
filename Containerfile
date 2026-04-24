@@ -8,12 +8,12 @@ USER 0
 RUN /opt/app-root/bin/pip install --quiet \
     git+https://github.com/krrome/docling-hierarchical-pdf.git
 
-# Patch rq_job_wrapper.py to add hierarchical post-processing.
+# Patch manager.py to add hierarchical post-processing.
 # The script searches for unique anchor strings; it fails loudly if any anchor
 # is missing (e.g. after an upstream restructure) and validates syntax before writing.
-COPY patch_rq_job_wrapper.py /tmp/patch_rq_job_wrapper.py
-RUN DOCLING_SERVE_PATH=$(/opt/app-root/bin/python -c "import docling_serve; print(docling_serve.__path__[0])") && \
-    /opt/app-root/bin/python /tmp/patch_rq_job_wrapper.py \
-        "$DOCLING_SERVE_PATH/rq_job_wrapper.py"
+COPY patch_manager.py /tmp/patch_manager.py
+RUN DOCLING_JOBKIT_CONVERT_PATH=$(/opt/app-root/bin/python -c "import docling_jobkit.convert; print(docling_jobkit.convert.__path__[0])") && \
+    /opt/app-root/bin/python /tmp/patch_manager.py \
+        "$DOCLING_JOBKIT_CONVERT_PATH/manager.py"
 
 USER 1001
