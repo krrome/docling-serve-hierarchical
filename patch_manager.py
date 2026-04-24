@@ -35,7 +35,7 @@ REPLACEMENT = """import copy
         )
         def _postprocess() -> Iterator[ConversionResult]:
             for r, s in zip(results, postprocessor_sources):
-                ResultPostprocessor(r, source=s, raise_on_error=True).process()
+                ResultPostprocessor(r, source=s).process()
                 yield r
 
         return _postprocess()"""
