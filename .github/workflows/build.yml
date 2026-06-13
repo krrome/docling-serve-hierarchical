@@ -7,9 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       upstream_tag:
-        description: "Upstream image tag to build against (default: latest)"
+        description: "Upstream image tag to build against (overrides per-variant default; base/cpu default to 'latest', cu* default to 'main')"
         required: false
-        default: "latest"
 
 env:
   GHCR_REGISTRY: ghcr.io
@@ -87,18 +86,46 @@ jobs:
             name: docling-serve-hierarchical
             platforms: linux/amd64,linux/arm64
             tag_latest: true
+            default_tag: latest
           - upstream: docling-project/docling-serve-cpu
             name: docling-serve-hierarchical-cpu
             platforms: linux/amd64,linux/arm64
             tag_latest: true
+            default_tag: latest
           - upstream: docling-project/docling-serve-cu128
             name: docling-serve-hierarchical-cu128
-            platforms: linux/amd64,linux/arm64
+            platforms: linux/amd64
             tag_latest: false
+            default_tag: main
           - upstream: docling-project/docling-serve-cu130
             name: docling-serve-hierarchical-cu130
-            platforms: linux/amd64,linux/arm64
+            platforms: linux/amd64
             tag_latest: false
+            default_tag: main
+          - upstream: docling-project/docling-serve
+            name: docling-serve-hierarchical-models
+            platforms: linux/amd64,linux/arm64
+            tag_latest: true
+            default_tag: latest
+            bake_models: true
+          - upstream: docling-project/docling-serve-cpu
+            name: docling-serve-hierarchical-cpu-models
+            platforms: linux/amd64,linux/arm64
+            tag_latest: true
+            default_tag: latest
+            bake_models: true
+          - upstream: docling-project/docling-serve-cu128
+            name: docling-serve-hierarchical-cu128-models
+            platforms: linux/amd64
+            tag_latest: false
+            default_tag: main
+            bake_models: true
+          - upstream: docling-project/docling-serve-cu130
+            name: docling-serve-hierarchical-cu130-models
+            platforms: linux/amd64
+            tag_latest: false
+            default_tag: main
+            bake_models: true
 
     steps:
       - name: Check out the repo
@@ -117,9 +144,18 @@ jobs:
       - name: Resolve upstream tag
         id: upstream
         run: |
-          TAG="${{ inputs.upstream_tag || 'latest' }}"
+          TAG="${{ inputs.upstream_tag || matrix.spec.default_tag }}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "base=ghcr.io/${{ matrix.spec.upstream }}:$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Pull upstream image and read revision
+        id: upstream_rev
+        run: |
+          docker pull ${{ steps.upstream.outputs.base }}
+          SHA=$(docker inspect \
+            --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
+            ${{ steps.upstream.outputs.base }})
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata
         id: meta
@@ -129,9 +165,7 @@ jobs:
           flavor: |
             latest=${{ matrix.spec.tag_latest }}
           tags: |
-            type=schedule,pattern={{date 'YYYYMMDD'}}
-            type=raw,value=${{ steps.upstream.outputs.tag }}
-            type=sha,prefix=
+            type=raw,value=sha-${{ steps.upstream_rev.outputs.sha }},enable=${{ steps.upstream_rev.outputs.sha != '' }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -144,6 +178,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             BASE_IMAGE=${{ steps.upstream.outputs.base }}
+            BAKE_MODELS=${{ matrix.spec.bake_models && '1' || '0' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           pull: true
